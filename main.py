@@ -64,7 +64,7 @@ def login(request: schemas.requestdetails, db: Session = Depends(get_db)):
     access = create_access_token(user.id)
     refresh = create_refresh_token(user.id)
 
-    token_db = models.TokenTable(user_id=user.id, access_toke=access, refresh_toke=refresh, status=True)
+    token_db = models.TokenTable(user_id=user.id, access_token=access, refresh_token=refresh, status=True)
     db.add(token_db)
     db.commit()
     db.refresh(token_db)
@@ -171,7 +171,7 @@ def logout(dependencies=Depends(JWTBearer()), db: Session = Depends(get_db)):
         db.commit()
 
     existing_token = db.query(models.TokenTable).filter(models.TokenTable.user_id == user_id,
-                                                        models.TokenTable.access_toke == token).first()
+                                                        models.TokenTable.access_token == token).first()
     if existing_token:
         existing_token.status = False
         db.add(existing_token)
