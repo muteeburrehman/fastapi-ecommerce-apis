@@ -188,6 +188,45 @@ def view_cart(user_id: int, db: Session = Depends(get_db)):
 
     return {"user_id": user_id, "items": cart_items_schema}
 
+# Update quantity of an item in the cart
+@app.put("/update-cart-item/{user_id}/{item_id}")
+def update_cart_item(user_id: int, item_id: int, quantity: int, db: Session = Depends(get_db)):
+    # Retrieve the user's cart
+    cart = db.query(Cart).filter(Cart.user_id == user_id).first()
+    if not cart:
+        raise HTTPException(status_code=404, detail="Cart not found")
+
+    # Retrieve the cart item
+    cart_item = db.query(CartItem).filter(CartItem.cart_id == cart.id, CartItem.item_id == item_id).first()
+    if not cart_item:
+        raise HTTPException(status_code=404, detail="Item not found in the cart")
+
+    # Update the quantity of the cart item
+    cart_item.quantity = quantity
+    db.commit()
+
+    return {"message": "Cart item updated successfully"}
+
+
+# Remove an item from the cart
+@app.delete("/remove-from-cart/{user_id}/{item_id}")
+def remove_from_cart(user_id: int, item_id: int, db: Session = Depends(get_db)):
+    # Retrieve the user's cart
+    cart = db.query(Cart).filter(Cart.user_id == user_id).first()
+    if not cart:
+        raise HTTPException(status_code=404, detail="Cart not found")
+
+    # Retrieve the cart item
+    cart_item = db.query(CartItem).filter(CartItem.cart_id == cart.id, CartItem.item_id == item_id).first()
+    if not cart_item:
+        raise HTTPException(status_code=404, detail="Item not found in the cart")
+
+    # Delete the cart item
+    db.delete(cart_item)
+    db.commit()
+
+    return {"message": "Item removed from cart successfully"}
+
 
 @app.post('/change-password')
 def change_password(request: schemas.changepassword, db: Session = Depends(get_db)):
