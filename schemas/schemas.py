@@ -1,6 +1,7 @@
 import decimal
 
 from pydantic import BaseModel
+from typing import List
 import datetime
 
 
@@ -35,7 +36,6 @@ class TokenCreate(BaseModel):
 
 
 class ShoesSchema(BaseModel):
-
     name: str
     price: float
     category: str
@@ -44,7 +44,6 @@ class ShoesSchema(BaseModel):
 
 
 class ShoeCreate(BaseModel):
-
     name: str
     price: float
     category: str
@@ -53,7 +52,6 @@ class ShoeCreate(BaseModel):
 
 
 class ShoeUpdate(BaseModel):
-
     name: str
     price: float
     category: str
@@ -62,14 +60,21 @@ class ShoeUpdate(BaseModel):
 
 
 class Shoe(BaseModel):
-
     name: str
     price: float
     category: str
     description: str
     imageUrl: str
 
+
+class CartItemSchema(BaseModel):
+    item_id: int
+    quantity: int
+
+
+class CartSchema(BaseModel):
+    user_id: int
+    items: List[CartItemSchema]
+
     class Config:
         from_attributes = True  # Use from_attributes instead of orm_mode
-
-

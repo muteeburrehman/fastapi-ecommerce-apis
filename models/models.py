@@ -1,7 +1,8 @@
 import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, DOUBLE
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, DOUBLE, ForeignKey
 from database.database import Base
+from sqlalchemy.orm import relationship
 
 
 class User(Base):
@@ -11,6 +12,8 @@ class User(Base):
     username = Column(String(50), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
     password = Column(String(100), nullable=False)
+
+    carts = relationship("Cart", back_populates="user")
 
 
 class TokenTable(Base):
@@ -31,3 +34,24 @@ class Shoe(Base):
     category = Column(String(50), nullable=False)
     description = Column(String(500), nullable=False)
     imageUrl = Column(String(500), nullable=False)
+
+
+class Cart(Base):
+    __tablename__ = "cart"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'))  # Foreign key relationship to the users table id
+    user = relationship("User", back_populates="carts")
+    items = relationship("CartItem", back_populates="cart")  # Add this line to establish the relationship with CartItem
+
+
+class CartItem(Base):
+    __tablename__ = "cart_items"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    cart_id = Column(Integer, ForeignKey('cart.id'))  # Foreign key relationship to the carts table
+    item_id = Column(Integer, ForeignKey('shoe.id'))  # Foreign key relationship to the shoes table
+    quantity = Column(Integer, nullable=False)
+
+    cart = relationship("Cart", back_populates="items")  # Establishing the bidirectional relationship with Cart
+    shoe = relationship("Shoe")  # Establishing the relationship with the Shoe model

@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, APIRouter
 from sqlalchemy.orm import Session
 from functools import wraps
 import jwt
@@ -11,7 +11,7 @@ from fastapi import status
 
 from models import models
 from schemas import schemas
-from models.models import Base, User, TokenTable
+from models.models import Base, User, TokenTable, Cart, Shoe, CartItem
 
 from utils.utils import create_access_token, create_refresh_token, verify_password, get_hashed_password
 from authentication.auth_bearer import JWTBearer
@@ -22,6 +22,8 @@ from jose import jwt
 from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
+
+# router = APIRouter()
 # Allow requests from all origins, methods, and headers
 app.add_middleware(
     CORSMiddleware,
@@ -138,6 +140,53 @@ def delete_shoe(shoe_id: int, db: Session = Depends(get_db)):
     db.delete(db_shoe)
     db.commit()
     return db_shoe.__dict__
+
+@app.post("/add-to-cart/")
+def add_to_cart(cart_data: schemas.CartSchema, db: Session = Depends(get_db)):
+    # Check if the user exists
+    user = db.query(User).filter(User.id == cart_data.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Create a new cart for the user
+    new_cart = Cart(user_id=cart_data.user_id)
+    db.add(new_cart)
+    db.commit()
+    db.refresh(new_cart)
+
+    # Add items to the cart
+    for item in cart_data.items:
+        # Check if the shoe exists
+        shoe = db.query(Shoe).filter(Shoe.id == item.item_id).first()
+        if not shoe:
+            raise HTTPException(status_code=404, detail=f"Shoe with ID {item.item_id} not found")
+
+        # Create a new cart item
+        cart_item = CartItem(cart_id=new_cart.id, item_id=item.item_id, quantity=item.quantity)
+        db.add(cart_item)
+
+    db.commit()
+    return {"message": "Items added to cart successfully"}
+
+
+
+
+@app.get("/view-cart/{user_id}")
+def view_cart(user_id: int, db: Session = Depends(get_db)):
+    # Retrieve the user's cart
+    cart = db.query(Cart).filter(Cart.user_id == user_id).first()
+    if not cart:
+        raise HTTPException(status_code=404, detail="Cart not found")
+
+    # Retrieve items in the cart
+    cart_items = db.query(CartItem).filter(CartItem.cart_id == cart.id).all()
+
+    # Convert cart items to schemas for serialization
+    cart_items_schema = [
+        schemas.CartItemSchema(item_id=item.item_id, quantity=item.quantity) for item in cart_items
+    ]
+
+    return {"user_id": user_id, "items": cart_items_schema}
 
 
 @app.post('/change-password')
